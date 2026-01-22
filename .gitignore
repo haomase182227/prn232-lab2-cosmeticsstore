@@ -1,0 +1,24 @@
+# Build artifacts
+bin/
+obj/
+out/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# Docker
+.env
+
+# Logs
+*.log
+
+# Database
+*.mdf
+*.ldf
+
+# macOS
+.DS_Store
