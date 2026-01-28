@@ -40,7 +40,13 @@ if (string.IsNullOrEmpty(connectionString))
 
 builder.Services.AddDbContext<CosmeticsDbContext>(options =>
 {
-    options.UseSqlServer(connectionString);
+    options.UseSqlServer(connectionString, sqlServerOptions =>
+    {
+        sqlServerOptions.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(30),
+            errorNumbersToAdd: null);
+    });
 });
 
 // =====================================================
@@ -80,6 +86,9 @@ builder.Services.AddControllers(options =>
         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
         options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
         options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+        
+        // Serialize enums as strings for better readability in Swagger
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     })
     .AddOData(options => options
         .Select()
@@ -174,6 +183,9 @@ builder.Services.AddSwaggerGen(options =>
     });
 
     options.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
+    
+    // Configure Swagger to display enums as strings instead of integers
+    options.UseInlineDefinitionsForEnums();
 });
 
 // =====================================================

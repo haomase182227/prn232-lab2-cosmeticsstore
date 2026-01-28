@@ -16,6 +16,7 @@ public static class CosmeticMapper
         return new CosmeticInformation
         {
             CosmeticId = request.CosmeticId,
+            CosmeticCode = request.CosmeticCode,
             CosmeticName = request.CosmeticName,
             SkinType = request.SkinType,
             ExpirationDate = request.ExpirationDate,
@@ -30,6 +31,7 @@ public static class CosmeticMapper
         return new CosmeticInformation
         {
             CosmeticId = id,
+            CosmeticCode = request.CosmeticCode,
             CosmeticName = request.CosmeticName,
             SkinType = request.SkinType,
             ExpirationDate = request.ExpirationDate,
@@ -45,15 +47,20 @@ public static class CosmeticMapper
         return new CosmeticInformation
         {
             CosmeticId = businessModel.CosmeticId,
+            CosmeticCode = businessModel.CosmeticCode,
             CosmeticName = businessModel.CosmeticName,
             SkinType = businessModel.SkinType,
             ExpirationDate = businessModel.ExpirationDate,
             CosmeticSize = businessModel.CosmeticSize,
             DollarPrice = businessModel.DollarPrice,
             CategoryId = businessModel.CategoryId,
+            Status = businessModel.Status,
+            CreatedAt = businessModel.CreatedAt,
+            UpdatedAt = businessModel.UpdatedAt,
             Category = businessModel.Category != null ? new CosmeticCategory
             {
                 CategoryId = businessModel.Category.CategoryId,
+                CategoryCode = businessModel.Category.CategoryCode,
                 CategoryName = businessModel.Category.CategoryName
             } : null
         };
@@ -65,15 +72,20 @@ public static class CosmeticMapper
         return new CosmeticBusinessModel
         {
             CosmeticId = entity.CosmeticId,
+            CosmeticCode = entity.CosmeticCode,
             CosmeticName = entity.CosmeticName,
             SkinType = entity.SkinType,
             ExpirationDate = entity.ExpirationDate,
             CosmeticSize = entity.CosmeticSize,
             DollarPrice = entity.DollarPrice,
             CategoryId = entity.CategoryId,
+            Status = entity.Status,
+            CreatedAt = entity.CreatedAt,
+            UpdatedAt = entity.UpdatedAt,
             Category = entity.Category != null ? new CategoryBusinessModel
             {
                 CategoryId = entity.Category.CategoryId,
+                CategoryCode = entity.Category.CategoryCode,
                 CategoryName = entity.Category.CategoryName
             } : null
         };
@@ -85,15 +97,20 @@ public static class CosmeticMapper
         return new CosmeticResponse
         {
             CosmeticId = businessModel.CosmeticId,
+            CosmeticCode = businessModel.CosmeticCode,
             CosmeticName = businessModel.CosmeticName,
             SkinType = businessModel.SkinType,
             ExpirationDate = businessModel.ExpirationDate,
             CosmeticSize = businessModel.CosmeticSize,
             DollarPrice = businessModel.DollarPrice,
             CategoryId = businessModel.CategoryId,
+            Status = businessModel.Status,
+            CreatedAt = businessModel.CreatedAt,
+            UpdatedAt = businessModel.UpdatedAt,
             Category = businessModel.Category != null ? new CategoryResponse
             {
                 CategoryId = businessModel.Category.CategoryId,
+                CategoryCode = businessModel.Category.CategoryCode,
                 CategoryName = businessModel.Category.CategoryName
             } : null
         };
@@ -105,15 +122,20 @@ public static class CosmeticMapper
         return new CosmeticResponse
         {
             CosmeticId = entity.CosmeticId,
+            CosmeticCode = entity.CosmeticCode,
             CosmeticName = entity.CosmeticName,
             SkinType = entity.SkinType,
             ExpirationDate = entity.ExpirationDate,
             CosmeticSize = entity.CosmeticSize,
             DollarPrice = entity.DollarPrice,
             CategoryId = entity.CategoryId,
+            Status = entity.Status,
+            CreatedAt = entity.CreatedAt,
+            UpdatedAt = entity.UpdatedAt,
             Category = entity.Category != null ? new CategoryResponse
             {
                 CategoryId = entity.Category.CategoryId,
+                CategoryCode = entity.Category.CategoryCode,
                 CategoryName = entity.Category.CategoryName
             } : null
         };
@@ -125,6 +147,7 @@ public static class CosmeticMapper
         return new CategoryResponse
         {
             CategoryId = entity.CategoryId,
+            CategoryCode = entity.CategoryCode,
             CategoryName = entity.CategoryName
         };
     }

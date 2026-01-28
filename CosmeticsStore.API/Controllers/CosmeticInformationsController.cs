@@ -31,6 +31,13 @@ public class CosmeticsController : ControllerBase
     /// <summary>
     /// Get cosmetics list with search, filter, sort, paging
     /// Query params use kebab-case: search-term, min-price, sort-by, etc.
+    /// Supports:
+    /// - Search by multiple fields (search-term) or specific fields (cosmetic-name, cosmetic-code, skin-type)
+    /// - Filter by foreign key (category-id) or code (category-code)
+    /// - Filter by price range (min-price, max-price)
+    /// - Sort by timestamp (created-at, updated-at), alphabetic (name), or code (not ID)
+    /// - Paging with default 50, max 100 per page
+    /// - Field selection and include-category option
     /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(ApiResponse<PagedResponse<CosmeticResponse>>), 200)]
@@ -38,38 +45,33 @@ public class CosmeticsController : ControllerBase
     public async Task<ActionResult<ApiResponse<PagedResponse<CosmeticResponse>>>> GetCosmetics(
         [FromQuery] CosmeticSearchRequest request)
     {
-        // Convert kebab-case sort-by to PascalCase for database
-        var sortBy = request.SortBy switch
+        // Validate page size (max 100)
+        if (request.PageSize > 100)
         {
-            "cosmetic-name" => "CosmeticName",
-            "skin-type" => "SkinType",
-            "dollar-price" => "DollarPrice",
-            "expiration-date" => "ExpirationDate",
-            _ => "CosmeticName"
-        };
-
-        int pageSize = request.NoPaging ? int.MaxValue : request.PageSize;
-        int pageNumber = request.NoPaging ? 1 : request.Page;
+            request.PageSize = 100;
+        }
 
         var (items, totalCount) = await _cosmeticInformationService.SearchCosmetics(
             request.SearchTerm,
             request.CosmeticName,
+            request.CosmeticCode,
             request.SkinType,
             request.CategoryId,
+            request.CategoryCode,
             request.MinPrice,
             request.MaxPrice,
-            sortBy,
-            request.SortOrder ?? "asc",
-            pageNumber,
-            pageSize,
+            GetSortByString(request.SortBy),
+            GetSortOrderString(request.SortOrder),
+            request.Page,
+            request.PageSize,
             request.IncludeCategory
         );
 
         var pagedResponse = CosmeticMapper.ToPagedResponse(
             items,
             totalCount,
-            pageNumber,
-            request.NoPaging ? totalCount : request.PageSize
+            request.Page,
+            request.PageSize
         );
 
         return Ok(ApiResponse<PagedResponse<CosmeticResponse>>.SuccessResponse(
@@ -79,18 +81,43 @@ public class CosmeticsController : ControllerBase
     }
 
     /// <summary>
-    /// Get single cosmetic by ID
+    /// Get single cosmetic by ID (internal database ID)
     /// </summary>
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<CosmeticResponse>), 200)]
     [ProducesResponseType(typeof(ApiResponse), 404)]
     public async Task<ActionResult<ApiResponse<CosmeticResponse>>> GetCosmetic(string id)
-    {        var entity = await _cosmeticInformationService.GetOne(id);
+    {        
+        var entity = await _cosmeticInformationService.GetOne(id);
         
         if (entity == null)
         {
             return NotFound(ApiResponse<CosmeticResponse>.ErrorResponse(
                 $"Cosmetic with ID '{id}' not found"
+            ));
+        }
+
+        var response = CosmeticMapper.ToResponse(entity);
+        return Ok(ApiResponse<CosmeticResponse>.SuccessResponse(
+            response,
+            "Cosmetic retrieved successfully"
+        ));
+    }
+
+    /// <summary>
+    /// Get single cosmetic by Code (user-friendly code)
+    /// </summary>
+    [HttpGet("code/{code}")]
+    [ProducesResponseType(typeof(ApiResponse<CosmeticResponse>), 200)]
+    [ProducesResponseType(typeof(ApiResponse), 404)]
+    public async Task<ActionResult<ApiResponse<CosmeticResponse>>> GetCosmeticByCode(string code)
+    {        
+        var entity = await _cosmeticInformationService.GetOneByCode(code);
+        
+        if (entity == null)
+        {
+            return NotFound(ApiResponse<CosmeticResponse>.ErrorResponse(
+                $"Cosmetic with Code '{code}' not found"
             ));
         }
 
@@ -146,19 +173,37 @@ public class CosmeticsController : ControllerBase
     }
 
     /// <summary>
-    /// Delete cosmetic
+    /// Soft delete cosmetic (set Status = 0, kh�ng x�a kh?i database)
     /// </summary>
     [HttpDelete("{id}")]
     [ProducesResponseType(typeof(ApiResponse<CosmeticResponse>), 200)]
     [ProducesResponseType(typeof(ApiResponse), 404)]
-    public async Task<ActionResult<ApiResponse<CosmeticResponse>>> DeleteCosmetic(string id)
+    public async Task<ActionResult<ApiResponse<CosmeticResponse>>> SoftDeleteCosmetic(string id)
+    {
+        var deleted = await _cosmeticInformationService.SoftDelete(id);
+        var response = CosmeticMapper.ToResponse(deleted);
+
+        return Ok(ApiResponse<CosmeticResponse>.SuccessResponse(
+            response,
+            "Cosmetic soft deleted successfully"
+        ));
+    }
+
+    /// <summary>
+    /// Hard delete cosmetic (x�a v?nh vi?n kh?i database) - Admin only
+    /// </summary>
+    [HttpDelete("{id}/hard")]
+    [Authorize(Roles = "1")] // Admin only
+    [ProducesResponseType(typeof(ApiResponse<CosmeticResponse>), 200)]
+    [ProducesResponseType(typeof(ApiResponse), 404)]
+    public async Task<ActionResult<ApiResponse<CosmeticResponse>>> HardDeleteCosmetic(string id)
     {
         var deleted = await _cosmeticInformationService.Delete(id);
         var response = CosmeticMapper.ToResponse(deleted);
 
         return Ok(ApiResponse<CosmeticResponse>.SuccessResponse(
             response,
-            "Cosmetic deleted successfully"
+            "Cosmetic permanently deleted"
         ));
     }
 
@@ -202,5 +247,29 @@ public class CosmeticsController : ControllerBase
     {
         var result = await _cosmeticInformationService.GetAllCosmetics();
         return Ok(result.Count);
+    }
+
+    // Helper methods to convert enum to kebab-case string
+    private string GetSortByString(SortByOption? sortBy)
+    {
+        return sortBy switch
+        {
+            SortByOption.CreatedAt => "created-at",
+            SortByOption.UpdatedAt => "updated-at",
+            SortByOption.Name => "name",
+            SortByOption.Code => "code",
+            SortByOption.Price => "price",
+            _ => "created-at"
+        };
+    }
+
+    private string GetSortOrderString(SortOrderOption? sortOrder)
+    {
+        return sortOrder switch
+        {
+            SortOrderOption.Asc => "asc",
+            SortOrderOption.Desc => "desc",
+            _ => "desc"
+        };
     }
 }

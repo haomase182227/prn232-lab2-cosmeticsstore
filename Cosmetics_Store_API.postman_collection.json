@@ -1,0 +1,1091 @@
+{
+  "info": {
+    "name": "Cosmetics Store API - Complete Test Suite",
+    "description": "Khớp 100% với API thực tế của project prn232-lab2-cosmeticsstore\\n\\nBao gồm:\\n- Authentication (JWT Token)\\n- Soft Delete: DELETE /api/cosmetics/{id}\\n- Search với Min/Max Price + Validation\\n- Search theo Foreign Key & Primary Key\\n- Pagination (Default 50, Max 100)\\n- Sorting (created-at, updated-at, code, name, price - KHÔNG cho phép sort by id)\\n- ID vs Code dual key system\\n\\nTất cả query params dùng kebab-case",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5282",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Login - Admin (Get Token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has token', () => {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.success).to.be.true;",
+                  "    pm.expect(data.data.token).to.be.a('string');",
+                  "    pm.collectionVariables.set('token', data.data.token);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@CosmeticsDB.info\",\n  \"password\": \"@1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Login - Invalid (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"wrong@email.com\",\n  \"password\": \"wrong\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Soft Delete Tests",
+      "item": [
+        {
+          "name": "TC-SD-01: Soft Delete Success (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Status = 0', () => {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.data.status).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics/PL020001",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics", "PL020001"]
+            },
+            "description": "Endpoint: DELETE /api/cosmetics/{id}"
+          }
+        },
+        {
+          "name": "TC-SD-02: Delete Already Deleted (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics/PL020001",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics", "PL020001"]
+            }
+          }
+        },
+        {
+          "name": "TC-SD-03: Get All (Only Active)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Only Status=1 items', () => {",
+                  "    const data = pm.response.json();",
+                  "    data.data.items.forEach(item => {",
+                  "        pm.expect(item.status).to.eql(1);",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics"]
+            }
+          }
+        },
+        {
+          "name": "TC-SD-04: Get Deleted Item (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics/PL020001",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics", "PL020001"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Price Range & Validation",
+      "item": [
+        {
+          "name": "TC-SR-01: Min Price Only",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('All prices >= 50', () => {",
+                  "    const data = pm.response.json();",
+                  "    data.data.items.forEach(item => {",
+                  "        pm.expect(item.dollarPrice).to.be.at.least(50);",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics?min-price=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics"],
+              "query": [
+                {
+                  "key": "min-price",
+                  "value": "50"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC-SR-02: Max Price Only",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('All prices <= 20', () => {",
+                  "    const data = pm.response.json();",
+                  "    data.data.items.forEach(item => {",
+                  "        pm.expect(item.dollarPrice).to.be.at.most(20);",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics?max-price=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics"],
+              "query": [
+                {
+                  "key": "max-price",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC-SR-03: Price Range (10-25)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Prices between 10-25', () => {",
+                  "    const data = pm.response.json();",
+                  "    data.data.items.forEach(item => {",
+                  "        pm.expect(item.dollarPrice).to.be.at.least(10);",
+                  "        pm.expect(item.dollarPrice).to.be.at.most(25);",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics?min-price=10&max-price=25",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics"],
+              "query": [
+                {
+                  "key": "min-price",
+                  "value": "10"
+                },
+                {
+                  "key": "max-price",
+                  "value": "25"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC-SR-04: Min>Max (400 Validation)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Validation error', () => {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.success).to.be.false;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics?min-price=100&max-price=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics"],
+              "query": [
+                {
+                  "key": "min-price",
+                  "value": "100"
+                },
+                {
+                  "key": "max-price",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Validation: MinPrice cannot be greater than MaxPrice"
+          }
+        },
+        {
+          "name": "TC-SR-05: Negative Price (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics?min-price=-50",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics"],
+              "query": [
+                {
+                  "key": "min-price",
+                  "value": "-50"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Foreign Key & Primary Key Search",
+      "item": [
+        {
+          "name": "TC-FK-01: Filter by CategoryId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('All items match categoryId', () => {",
+                  "    const data = pm.response.json();",
+                  "    data.data.items.forEach(item => {",
+                  "        pm.expect(item.categoryId).to.eql('CAT0101011');",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics?category-id=CAT0101011",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics"],
+              "query": [
+                {
+                  "key": "category-id",
+                  "value": "CAT0101011"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC-FK-02: Filter by CategoryCode",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Returns SKINCARE items', () => {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.data.items.length).to.be.greaterThan(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics?category-code=SKINCARE",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics"],
+              "query": [
+                {
+                  "key": "category-code",
+                  "value": "SKINCARE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC-PK-01: Get by ID (Internal)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Single item returned', () => {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.data.cosmeticId).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics/PL009602",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics", "PL009602"]
+            },
+            "description": "CosmeticId (internal primary key)"
+          }
+        },
+        {
+          "name": "TC-PK-02: Get by Code (User-facing)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Correct code returned', () => {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.data.cosmeticCode).to.eql('MAKEUP-002');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics/code/MAKEUP-002",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics", "code", "MAKEUP-002"]
+            },
+            "description": "CosmeticCode (user-friendly key)"
+          }
+        },
+        {
+          "name": "TC-FK-03: Invalid CategoryId (Empty)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Returns empty array', () => {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.data.items).to.be.an('array').that.is.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics?category-id=INVALID999",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics"],
+              "query": [
+                {
+                  "key": "category-id",
+                  "value": "INVALID999"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Pagination Tests",
+      "item": [
+        {
+          "name": "TC-PS-01: Default Page Size (50)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('PageSize = 50', () => {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.data.pageSize).to.eql(50);",
+                  "    pm.expect(data.data.items.length).to.be.at.most(50);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics"]
+            },
+            "description": "No page-size query param"
+          }
+        },
+        {
+          "name": "TC-PS-02: Custom Page Size (20)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('PageSize = 20', () => {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.data.pageSize).to.eql(20);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics?page-size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics"],
+              "query": [
+                {
+                  "key": "page-size",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC-PS-03: Exceed Max (150 → 100)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Capped at 100', () => {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.data.pageSize).to.be.at.most(100);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics?page-size=150",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics"],
+              "query": [
+                {
+                  "key": "page-size",
+                  "value": "150"
+                }
+              ]
+            },
+            "description": "Should auto-cap to 100"
+          }
+        },
+        {
+          "name": "TC-PS-04: Invalid Page Size (0)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics?page-size=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics"],
+              "query": [
+                {
+                  "key": "page-size",
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC-PS-05: Page 2 Navigation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('CurrentPage = 2', () => {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.data.currentPage).to.eql(2);",
+                  "    pm.expect(data.data.hasPreviousPage).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics?page=2&page-size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "2"
+                },
+                {
+                  "key": "page-size",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC-PS-06: Invalid Page (0)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics?page=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "Page must be >= 1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Sorting Tests",
+      "item": [
+        {
+          "name": "TC-ST-01: Sort by Created Date DESC",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics?sort-by=created-at&sort-order=desc",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics"],
+              "query": [
+                {
+                  "key": "sort-by",
+                  "value": "created-at"
+                },
+                {
+                  "key": "sort-order",
+                  "value": "desc"
+                }
+              ]
+            },
+            "description": "Newest first"
+          }
+        },
+        {
+          "name": "TC-ST-02: Sort by Updated Date",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics?sort-by=updated-at&sort-order=desc",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics"],
+              "query": [
+                {
+                  "key": "sort-by",
+                  "value": "updated-at"
+                },
+                {
+                  "key": "sort-order",
+                  "value": "desc"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC-ST-03: Sort by Name (A-Z)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics?sort-by=name&sort-order=asc",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics"],
+              "query": [
+                {
+                  "key": "sort-by",
+                  "value": "name"
+                },
+                {
+                  "key": "sort-order",
+                  "value": "asc"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC-ST-04: Sort by Code",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics?sort-by=code&sort-order=asc",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics"],
+              "query": [
+                {
+                  "key": "sort-by",
+                  "value": "code"
+                },
+                {
+                  "key": "sort-order",
+                  "value": "asc"
+                }
+              ]
+            },
+            "description": "Sort by CosmeticCode"
+          }
+        },
+        {
+          "name": "TC-ST-05: Sort by ID (BLOCKED - 400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Validation error', () => {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.message).to.include('Validation');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics?sort-by=id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics"],
+              "query": [
+                {
+                  "key": "sort-by",
+                  "value": "id"
+                }
+              ]
+            },
+            "description": "Sorting by ID is not allowed (validation)"
+          }
+        },
+        {
+          "name": "TC-ST-06: Invalid Sort Order (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics?sort-order=random",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics"],
+              "query": [
+                {
+                  "key": "sort-order",
+                  "value": "random"
+                }
+              ]
+            },
+            "description": "Only 'asc' or 'desc' allowed"
+          }
+        },
+        {
+          "name": "TC-ST-07: Sort by Price",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics?sort-by=price&sort-order=asc",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics"],
+              "query": [
+                {
+                  "key": "sort-by",
+                  "value": "price"
+                },
+                {
+                  "key": "sort-order",
+                  "value": "asc"
+                }
+              ]
+            },
+            "description": "Cheapest to most expensive"
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Combined Scenarios",
+      "item": [
+        {
+          "name": "TC-CB-01: Full Search Query",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Complex query works', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.data.items).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics?search-term=serum&category-code=SKINCARE&min-price=10&max-price=50&sort-by=price&sort-order=asc&page=1&page-size=20&include-category=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics"],
+              "query": [
+                {
+                  "key": "search-term",
+                  "value": "serum"
+                },
+                {
+                  "key": "category-code",
+                  "value": "SKINCARE"
+                },
+                {
+                  "key": "min-price",
+                  "value": "10"
+                },
+                {
+                  "key": "max-price",
+                  "value": "50"
+                },
+                {
+                  "key": "sort-by",
+                  "value": "price"
+                },
+                {
+                  "key": "sort-order",
+                  "value": "asc"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page-size",
+                  "value": "20"
+                },
+                {
+                  "key": "include-category",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Search + Filter + Sort + Pagination"
+          }
+        },
+        {
+          "name": "TC-CB-02: Specific Field Search",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics?cosmetic-name=cream&skin-type=Dry",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics"],
+              "query": [
+                {
+                  "key": "cosmetic-name",
+                  "value": "cream"
+                },
+                {
+                  "key": "skin-type",
+                  "value": "Dry"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Category Management",
+      "item": [
+        {
+          "name": "Get All Categories",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Returns categories', () => {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.data).to.be.an('array');",
+                  "    pm.expect(data.data.length).to.be.greaterThan(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "categories"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. CRUD Operations",
+      "item": [
+        {
+          "name": "Create Cosmetic (POST)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cosmeticName\": \"Test Product\",\n  \"cosmeticCode\": \"TEST-001\",\n  \"description\": \"Test Description\",\n  \"dollarPrice\": 29.99,\n  \"quantity\": 100,\n  \"categoryId\": \"CAT0101011\",\n  \"skinType\": \"All\",\n  \"expiryDate\": \"2025-12-31\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics"]
+            }
+          }
+        },
+        {
+          "name": "Update Cosmetic (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cosmeticName\": \"Updated Name\",\n  \"description\": \"Updated description\",\n  \"dollarPrice\": 35.99,\n  \"quantity\": 150\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics/PL009602",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics", "PL009602"]
+            }
+          }
+        },
+        {
+          "name": "Hard Delete (Admin Only)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics/TEST-001/hard",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics", "TEST-001", "hard"]
+            },
+            "description": "Permanent deletion (admin only)"
+          }
+        }
+      ]
+    }
+  ]
+}
