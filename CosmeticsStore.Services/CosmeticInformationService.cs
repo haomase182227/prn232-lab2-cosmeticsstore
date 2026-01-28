@@ -15,12 +15,26 @@ public class CosmeticInformationService : ICosmeticInformationService
 
     public async Task<CosmeticInformation> Add(CosmeticInformation cosmeticInformation)
     {
+        cosmeticInformation.Status = 1;
+        cosmeticInformation.CreatedAt = DateTime.UtcNow;
+        cosmeticInformation.UpdatedAt = DateTime.UtcNow;
         return await _repository.Add(cosmeticInformation);
     }
 
     public async Task<CosmeticInformation> Delete(string id)
     {
         return await _repository.Delete(id);
+    }
+
+    public async Task<CosmeticInformation> SoftDelete(string id)
+    {
+        var cosmetic = await _repository.GetOne(id);
+        if (cosmetic == null)
+            throw new KeyNotFoundException($"Cosmetic with ID '{id}' not found");
+        
+        cosmetic.Status = 0;
+        cosmetic.UpdatedAt = DateTime.UtcNow;
+        return await _repository.Update(cosmetic);
     }
 
     public async Task<List<CosmeticCategory>> GetAllCategories()
@@ -36,8 +50,10 @@ public class CosmeticInformationService : ICosmeticInformationService
     public async Task<(List<CosmeticInformation> Items, int TotalCount)> SearchCosmetics(
         string? searchTerm,
         string? cosmeticName,
+        string? cosmeticCode,
         string? skinType,
         string? categoryId,
+        string? categoryCode,
         decimal? minPrice,
         decimal? maxPrice,
         string sortBy,
@@ -47,8 +63,8 @@ public class CosmeticInformationService : ICosmeticInformationService
         bool includeCategory)
     {
         return await _repository.SearchCosmetics(
-            searchTerm, cosmeticName, skinType, categoryId, minPrice, maxPrice,
-            sortBy, sortOrder, pageNumber, pageSize, includeCategory);
+            searchTerm, cosmeticName, cosmeticCode, skinType, categoryId, categoryCode, 
+            minPrice, maxPrice, sortBy, sortOrder, pageNumber, pageSize, includeCategory);
     }
 
     public async Task<CosmeticInformation> GetOne(string id)
@@ -56,8 +72,14 @@ public class CosmeticInformationService : ICosmeticInformationService
         return await _repository.GetOne(id);
     }
 
+    public async Task<CosmeticInformation> GetOneByCode(string code)
+    {
+        return await _repository.GetOneByCode(code);
+    }
+
     public async Task<CosmeticInformation> Update(CosmeticInformation cosmeticInformation)
     {
+        cosmeticInformation.UpdatedAt = DateTime.UtcNow;
         return await _repository.Update(cosmeticInformation);
     }
 }

@@ -17,11 +17,17 @@ public class CosmeticSearchRequest
     [FromQuery(Name = "cosmetic-name")]
     public string? CosmeticName { get; set; }
     
+    [FromQuery(Name = "cosmetic-code")]
+    public string? CosmeticCode { get; set; }
+    
     [FromQuery(Name = "skin-type")]
     public string? SkinType { get; set; }
     
     [FromQuery(Name = "category-id")]
     public string? CategoryId { get; set; }
+
+    [FromQuery(Name = "category-code")]
+    public string? CategoryCode { get; set; }
     
     [FromQuery(Name = "min-price")]
     [Range(0, double.MaxValue, ErrorMessage = "Min price must be >= 0")]
@@ -31,26 +37,23 @@ public class CosmeticSearchRequest
     [Range(0, double.MaxValue, ErrorMessage = "Max price must be >= 0")]
     public decimal? MaxPrice { get; set; }
 
-    // Sorting
+    // Sorting (không sort theo ID, sort theo timestamp, alphabetic, code)
     [FromQuery(Name = "sort-by")]
-    public string SortBy { get; set; } = "cosmetic-name";
+    public string SortBy { get; set; } = "created-at";
     
     [FromQuery(Name = "sort-order")]
-    public string SortOrder { get; set; } = "asc"; // asc or desc
+    public string SortOrder { get; set; } = "desc"; // asc or desc
 
-    // Paging
+    // Paging (default 50-100, có max)
     [FromQuery(Name = "page")]
     [Range(1, int.MaxValue, ErrorMessage = "Page number must be >= 1")]
     public int Page { get; set; } = 1;
     
     [FromQuery(Name = "page-size")]
-    [Range(-1, int.MaxValue, ErrorMessage = "Page size must be >= 1 or -1 for all")]
-    public int PageSize { get; set; } = 10;
-    
-    // Set to -1 to get all records without paging
-    public bool NoPaging => PageSize == -1;
+    [Range(1, 100, ErrorMessage = "Page size must be between 1 and 100")]
+    public int PageSize { get; set; } = 50;
 
-    // Field selection
+    // Field selection (ch?n các field c?n tr? v?)
     [FromQuery(Name = "fields")]
     public string? Fields { get; set; }
 

@@ -11,6 +11,10 @@ public class CreateCosmeticRequest
     [StringLength(50, ErrorMessage = "Cosmetic ID cannot exceed 50 characters")]
     public string CosmeticId { get; set; } = null!;
 
+    [Required(ErrorMessage = "Cosmetic Code is required")]
+    [StringLength(50, ErrorMessage = "Cosmetic Code cannot exceed 50 characters")]
+    public string CosmeticCode { get; set; } = null!;
+
     [Required(ErrorMessage = "Cosmetic Name is required")]
     [StringLength(200, ErrorMessage = "Cosmetic Name cannot exceed 200 characters")]
     public string CosmeticName { get; set; } = null!;
@@ -40,6 +44,10 @@ public class CreateCosmeticRequest
 /// </summary>
 public class UpdateCosmeticRequest
 {
+    [Required(ErrorMessage = "Cosmetic Code is required")]
+    [StringLength(50, ErrorMessage = "Cosmetic Code cannot exceed 50 characters")]
+    public string CosmeticCode { get; set; } = null!;
+
     [Required(ErrorMessage = "Cosmetic Name is required")]
     [StringLength(200, ErrorMessage = "Cosmetic Name cannot exceed 200 characters")]
     public string CosmeticName { get; set; } = null!;
