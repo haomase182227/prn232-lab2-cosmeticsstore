@@ -60,8 +60,8 @@ public class CosmeticsController : ControllerBase
             request.CategoryCode,
             request.MinPrice,
             request.MaxPrice,
-            request.SortBy,
-            request.SortOrder ?? "desc",
+            GetSortByString(request.SortBy),
+            GetSortOrderString(request.SortOrder),
             request.Page,
             request.PageSize,
             request.IncludeCategory
@@ -173,7 +173,7 @@ public class CosmeticsController : ControllerBase
     }
 
     /// <summary>
-    /// Soft delete cosmetic (set Status = 0, không xóa kh?i database)
+    /// Soft delete cosmetic (set Status = 0, khï¿½ng xï¿½a kh?i database)
     /// </summary>
     [HttpDelete("{id}")]
     [ProducesResponseType(typeof(ApiResponse<CosmeticResponse>), 200)]
@@ -190,7 +190,7 @@ public class CosmeticsController : ControllerBase
     }
 
     /// <summary>
-    /// Hard delete cosmetic (xóa v?nh vi?n kh?i database) - Admin only
+    /// Hard delete cosmetic (xï¿½a v?nh vi?n kh?i database) - Admin only
     /// </summary>
     [HttpDelete("{id}/hard")]
     [Authorize(Roles = "1")] // Admin only
@@ -247,5 +247,29 @@ public class CosmeticsController : ControllerBase
     {
         var result = await _cosmeticInformationService.GetAllCosmetics();
         return Ok(result.Count);
+    }
+
+    // Helper methods to convert enum to kebab-case string
+    private string GetSortByString(SortByOption? sortBy)
+    {
+        return sortBy switch
+        {
+            SortByOption.CreatedAt => "created-at",
+            SortByOption.UpdatedAt => "updated-at",
+            SortByOption.Name => "name",
+            SortByOption.Code => "code",
+            SortByOption.Price => "price",
+            _ => "created-at"
+        };
+    }
+
+    private string GetSortOrderString(SortOrderOption? sortOrder)
+    {
+        return sortOrder switch
+        {
+            SortOrderOption.Asc => "asc",
+            SortOrderOption.Desc => "desc",
+            _ => "desc"
+        };
     }
 }
