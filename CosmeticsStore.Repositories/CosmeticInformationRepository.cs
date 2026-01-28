@@ -44,14 +44,19 @@ public class CosmeticInformationRepository : ICosmeticInformationRepository
 
     public async Task<List<CosmeticCategory>> GetAllCategories()
     {
-        var listCategories = await _context.CosmeticCategories.ToListAsync();
+        // Ch? l?y categories có Status = 1 (Active)
+        var listCategories = await _context.CosmeticCategories
+            .Where(c => c.Status == 1)
+            .ToListAsync();
         return listCategories;
     }
 
     public async Task<List<CosmeticInformation>> GetAllCosmetics()
     {
+        // Ch? l?y cosmetics có Status = 1 (Active)
         var listCosmetics = await _context.CosmeticInformations
             .Include(x => x.Category)
+            .Where(x => x.Status == 1)
             .ToListAsync();
         return listCosmetics;
     }
@@ -59,8 +64,10 @@ public class CosmeticInformationRepository : ICosmeticInformationRepository
     public async Task<(List<CosmeticInformation> Items, int TotalCount)> SearchCosmetics(
         string? searchTerm,
         string? cosmeticName,
+        string? cosmeticCode,
         string? skinType,
         string? categoryId,
+        string? categoryCode,
         decimal? minPrice,
         decimal? maxPrice,
         string sortBy,
@@ -71,24 +78,34 @@ public class CosmeticInformationRepository : ICosmeticInformationRepository
     {
         IQueryable<CosmeticInformation> query = _context.CosmeticInformations;
 
+        // L?c ch? l?y records có Status = 1 (Active)
+        query = query.Where(x => x.Status == 1);
+
         // Extension - Include related entities
         if (includeCategory)
         {
             query = query.Include(x => x.Category);
         }
 
-        // Search
+        // Search (tìm ki?m trong nhi?u fields)
         if (!string.IsNullOrEmpty(searchTerm))
         {
             query = query.Where(x =>
                 x.CosmeticName.Contains(searchTerm) ||
+                x.CosmeticCode.Contains(searchTerm) ||
                 x.SkinType.Contains(searchTerm) ||
                 x.CosmeticSize.Contains(searchTerm));
         }
 
+        // Filter by specific fields
         if (!string.IsNullOrEmpty(cosmeticName))
         {
             query = query.Where(x => x.CosmeticName.Contains(cosmeticName));
+        }
+
+        if (!string.IsNullOrEmpty(cosmeticCode))
+        {
+            query = query.Where(x => x.CosmeticCode.Contains(cosmeticCode));
         }
 
         if (!string.IsNullOrEmpty(skinType))
@@ -96,11 +113,19 @@ public class CosmeticInformationRepository : ICosmeticInformationRepository
             query = query.Where(x => x.SkinType.Contains(skinType));
         }
 
+        // Search by khóa ngo?i (CategoryId)
         if (!string.IsNullOrEmpty(categoryId))
         {
             query = query.Where(x => x.CategoryId == categoryId);
         }
 
+        // Search by khóa ngo?i code (CategoryCode)
+        if (!string.IsNullOrEmpty(categoryCode))
+        {
+            query = query.Where(x => x.Category != null && x.Category.CategoryCode.Contains(categoryCode));
+        }
+
+        // Search có min max
         if (minPrice.HasValue)
         {
             query = query.Where(x => x.DollarPrice >= minPrice.Value);
@@ -114,25 +139,31 @@ public class CosmeticInformationRepository : ICosmeticInformationRepository
         // Total count before paging
         var totalCount = await query.CountAsync();
 
-        // Sort
+        // Sort: Không sort theo ID, sort theo timestamp, alphabetic, mã code
         query = sortBy?.ToLower() switch
         {
-            "cosmeticname" => sortOrder?.ToLower() == "desc"
+            "created-at" or "createdat" => sortOrder?.ToLower() == "asc"
+                ? query.OrderBy(x => x.CreatedAt)
+                : query.OrderByDescending(x => x.CreatedAt),
+            "updated-at" or "updatedat" => sortOrder?.ToLower() == "asc"
+                ? query.OrderBy(x => x.UpdatedAt)
+                : query.OrderByDescending(x => x.UpdatedAt),
+            "cosmetic-code" or "cosmeticcode" or "code" => sortOrder?.ToLower() == "desc"
+                ? query.OrderByDescending(x => x.CosmeticCode)
+                : query.OrderBy(x => x.CosmeticCode),
+            "cosmetic-name" or "cosmeticname" or "name" => sortOrder?.ToLower() == "desc"
                 ? query.OrderByDescending(x => x.CosmeticName)
                 : query.OrderBy(x => x.CosmeticName),
-            "dollarprice" or "price" => sortOrder?.ToLower() == "desc"
+            "dollar-price" or "dollarprice" or "price" => sortOrder?.ToLower() == "desc"
                 ? query.OrderByDescending(x => x.DollarPrice)
                 : query.OrderBy(x => x.DollarPrice),
-            "skintype" => sortOrder?.ToLower() == "desc"
+            "skin-type" or "skintype" => sortOrder?.ToLower() == "desc"
                 ? query.OrderByDescending(x => x.SkinType)
                 : query.OrderBy(x => x.SkinType),
-            "expirationdate" => sortOrder?.ToLower() == "desc"
-                ? query.OrderByDescending(x => x.ExpirationDate)
-                : query.OrderBy(x => x.ExpirationDate),
-            _ => query.OrderBy(x => x.CosmeticName)
+            _ => query.OrderByDescending(x => x.CreatedAt) // Default sort by CreatedAt DESC
         };
 
-        // Paging
+        // Paging (PageSize default 50, max 100)
         var items = await query
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
@@ -145,7 +176,17 @@ public class CosmeticInformationRepository : ICosmeticInformationRepository
     {
         var resultObject = await _context.CosmeticInformations
             .Include(x => x.Category)
+            .Where(x => x.Status == 1) // Ch? l?y active records
             .FirstOrDefaultAsync(x => x.CosmeticId.Equals(id));
+        return resultObject;
+    }
+
+    public async Task<CosmeticInformation> GetOneByCode(string code)
+    {
+        var resultObject = await _context.CosmeticInformations
+            .Include(x => x.Category)
+            .Where(x => x.Status == 1) // Ch? l?y active records
+            .FirstOrDefaultAsync(x => x.CosmeticCode.Equals(code));
         return resultObject;
     }
 
@@ -165,12 +206,14 @@ public class CosmeticInformationRepository : ICosmeticInformationRepository
             throw new Exception("Cate not found");
         }
 
+        updateObject.CosmeticCode = cosmeticInformation.CosmeticCode;
         updateObject.CosmeticName = cosmeticInformation.CosmeticName;
         updateObject.SkinType = cosmeticInformation.SkinType;
         updateObject.ExpirationDate = cosmeticInformation.ExpirationDate;
         updateObject.CosmeticSize = cosmeticInformation.CosmeticSize;
         updateObject.DollarPrice = cosmeticInformation.DollarPrice;
         updateObject.CategoryId = cosmeticInformation.CategoryId;
+        updateObject.UpdatedAt = cosmeticInformation.UpdatedAt;
 
         _context.CosmeticInformations.Update(updateObject);
         await _context.SaveChangesAsync();
