@@ -14,7 +14,6 @@ services:
       - "1434:1433"
     volumes:
       - cosmetics-sqlserver-data:/var/opt/mssql
-      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
       - ./seed-data.sql:/docker-entrypoint-initdb.d/seed-data.sql:ro
     networks:
       - cosmetics-network
