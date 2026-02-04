@@ -66,10 +66,6 @@ public class CosmeticSearchRequest : IValidatableObject
     [FromQuery(Name = "fields")]
     public string? Fields { get; set; }
 
-    // Extension (include related entities)
-    [FromQuery(Name = "include-category")]
-    public bool IncludeCategory { get; set; } = false;
-
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         // Validate: min-price cannot be greater than max-price

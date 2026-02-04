@@ -17,8 +17,7 @@ public interface ICosmeticInformationRepository
         string sortBy,
         string sortOrder,
         int pageNumber,
-        int pageSize,
-        bool includeCategory);
+        int pageSize);
     Task<CosmeticInformation> GetOne(string id);
     Task<CosmeticInformation> GetOneByCode(string code);
     Task<CosmeticInformation> Add(CosmeticInformation cosmeticInformation);
