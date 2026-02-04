@@ -12,7 +12,6 @@ public class CosmeticResponse
     public string ExpirationDate { get; set; } = null!;
     public string CosmeticSize { get; set; } = null!;
     public decimal DollarPrice { get; set; }
-    public string? CategoryId { get; set; }
     public int Status { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

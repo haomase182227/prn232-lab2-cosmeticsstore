@@ -63,8 +63,7 @@ public class CosmeticsController : ControllerBase
             GetSortByString(request.SortBy),
             GetSortOrderString(request.SortOrder),
             request.Page,
-            request.PageSize,
-            request.IncludeCategory
+            request.PageSize
         );
 
         var pagedResponse = CosmeticMapper.ToPagedResponse(

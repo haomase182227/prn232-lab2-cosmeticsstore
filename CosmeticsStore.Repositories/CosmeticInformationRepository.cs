@@ -73,19 +73,15 @@ public class CosmeticInformationRepository : ICosmeticInformationRepository
         string sortBy,
         string sortOrder,
         int pageNumber,
-        int pageSize,
-        bool includeCategory)
+        int pageSize)
     {
         IQueryable<CosmeticInformation> query = _context.CosmeticInformations;
 
         // L?c ch? l?y records c� Status = 1 (Active)
         query = query.Where(x => x.Status == 1);
 
-        // Extension - Include related entities
-        if (includeCategory)
-        {
-            query = query.Include(x => x.Category);
-        }
+        // Always include category
+        query = query.Include(x => x.Category);
 
         // Search (t�m ki?m trong nhi?u fields)
         if (!string.IsNullOrEmpty(searchTerm))

@@ -59,12 +59,11 @@ public class CosmeticInformationService : ICosmeticInformationService
         string sortBy,
         string sortOrder,
         int pageNumber,
-        int pageSize,
-        bool includeCategory)
+        int pageSize)
     {
         return await _repository.SearchCosmetics(
             searchTerm, cosmeticName, cosmeticCode, skinType, categoryId, categoryCode, 
-            minPrice, maxPrice, sortBy, sortOrder, pageNumber, pageSize, includeCategory);
+            minPrice, maxPrice, sortBy, sortOrder, pageNumber, pageSize);
     }
 
     public async Task<CosmeticInformation> GetOne(string id)
