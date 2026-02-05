@@ -1524,6 +1524,564 @@
           }
         }
       ]
+    },
+    {
+      "name": "9. POST Endpoint Tests",
+      "item": [
+        {
+          "name": "TC-POST-01: Create Cosmetic Success (201)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// HTTP Status Check",
+                  "pm.test('Status code is 201', () => {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "// JSON Schema Validation",
+                  "const schema = {",
+                  "    type: 'object',",
+                  "    required: ['success', 'message', 'data'],",
+                  "    properties: {",
+                  "        success: { type: 'boolean' },",
+                  "        message: { type: 'string' },",
+                  "        data: {",
+                  "            type: 'object',",
+                  "            required: ['cosmeticId', 'cosmeticCode', 'cosmeticName', 'dollarPrice', 'status'],",
+                  "            properties: {",
+                  "                cosmeticId: { type: 'string' },",
+                  "                cosmeticCode: { type: 'string' },",
+                  "                cosmeticName: { type: 'string' },",
+                  "                skinType: { type: 'string' },",
+                  "                dollarPrice: { type: 'number' },",
+                  "                status: { type: 'integer' },",
+                  "                category: { type: ['object', 'null'] }",
+                  "            }",
+                  "        }",
+                  "    }",
+                  "};",
+                  "",
+                  "pm.test('Response matches schema', () => {",
+                  "    pm.response.to.have.jsonSchema(schema);",
+                  "});",
+                  "",
+                  "pm.test('Success is true', () => {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test('Created cosmetic has correct values', () => {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.data.cosmeticId).to.eql('TEST001');",
+                  "    pm.expect(data.data.cosmeticCode).to.eql('TC001');",
+                  "    pm.expect(data.data.cosmeticName).to.eql('Test Hydrating Cream');",
+                  "    pm.expect(data.data.dollarPrice).to.eql(29.99);",
+                  "    pm.expect(data.data.status).to.eql(1);",
+                  "});",
+                  "",
+                  "pm.test('Response contains Location header', () => {",
+                  "    pm.response.to.have.header('Location');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cosmeticId\": \"TEST001\",\n  \"cosmeticCode\": \"TC001\",\n  \"cosmeticName\": \"Test Hydrating Cream\",\n  \"skinType\": \"Normal\",\n  \"expirationDate\": \"2026-12-31\",\n  \"cosmeticSize\": \"50ml\",\n  \"dollarPrice\": 29.99,\n  \"categoryId\": \"PL02\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics"]
+            }
+          }
+        },
+        {
+          "name": "TC-POST-02: Create Cosmetic - Validation Error (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// HTTP Status Check",
+                  "pm.test('Status code is 400', () => {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "// JSON Schema Validation",
+                  "const schema = {",
+                  "    type: 'object',",
+                  "    required: ['success', 'message'],",
+                  "    properties: {",
+                  "        success: { type: 'boolean' },",
+                  "        message: { type: 'string' }",
+                  "    }",
+                  "};",
+                  "",
+                  "pm.test('Response matches error schema', () => {",
+                  "    pm.response.to.have.jsonSchema(schema);",
+                  "});",
+                  "",
+                  "pm.test('Success is false', () => {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.success).to.be.false;",
+                  "});",
+                  "",
+                  "pm.test('Error message indicates missing fields', () => {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.message).to.be.a('string');",
+                  "    pm.expect(data.message.toLowerCase()).to.include('required');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cosmeticId\": \"TEST002\",\n  \"cosmeticCode\": \"TC002\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics"]
+            }
+          }
+        },
+        {
+          "name": "TC-POST-03: Create Cosmetic - Invalid Price (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// HTTP Status Check",
+                  "pm.test('Status code is 400', () => {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Success is false', () => {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.success).to.be.false;",
+                  "});",
+                  "",
+                  "pm.test('Error message indicates price validation', () => {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.message).to.be.a('string');",
+                  "    pm.expect(data.message.toLowerCase()).to.match(/price|greater/);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cosmeticId\": \"TEST003\",\n  \"cosmeticCode\": \"TC003\",\n  \"cosmeticName\": \"Invalid Price Product\",\n  \"skinType\": \"Normal\",\n  \"expirationDate\": \"2026-12-31\",\n  \"cosmeticSize\": \"50ml\",\n  \"dollarPrice\": -10.00,\n  \"categoryId\": \"PL02\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. PUT Endpoint Tests",
+      "item": [
+        {
+          "name": "TC-PUT-01: Update Cosmetic Success (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// HTTP Status Check",
+                  "pm.test('Status code is 200', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// JSON Schema Validation",
+                  "const schema = {",
+                  "    type: 'object',",
+                  "    required: ['success', 'message', 'data'],",
+                  "    properties: {",
+                  "        success: { type: 'boolean' },",
+                  "        message: { type: 'string' },",
+                  "        data: {",
+                  "            type: 'object',",
+                  "            required: ['cosmeticId', 'cosmeticCode', 'cosmeticName', 'dollarPrice', 'status'],",
+                  "            properties: {",
+                  "                cosmeticId: { type: 'string' },",
+                  "                cosmeticCode: { type: 'string' },",
+                  "                cosmeticName: { type: 'string' },",
+                  "                skinType: { type: 'string' },",
+                  "                dollarPrice: { type: 'number' },",
+                  "                status: { type: 'integer' }",
+                  "            }",
+                  "        }",
+                  "    }",
+                  "};",
+                  "",
+                  "pm.test('Response matches schema', () => {",
+                  "    pm.response.to.have.jsonSchema(schema);",
+                  "});",
+                  "",
+                  "pm.test('Success is true', () => {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test('Updated values are correct', () => {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.data.cosmeticName).to.eql('Updated Hydrating Cream');",
+                  "    pm.expect(data.data.dollarPrice).to.eql(35.99);",
+                  "    pm.expect(data.data.skinType).to.eql('Dry');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cosmeticCode\": \"TC001\",\n  \"cosmeticName\": \"Updated Hydrating Cream\",\n  \"skinType\": \"Dry\",\n  \"expirationDate\": \"2027-06-30\",\n  \"cosmeticSize\": \"75ml\",\n  \"dollarPrice\": 35.99,\n  \"categoryId\": \"PL02\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics/TEST001",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics", "TEST001"]
+            }
+          }
+        },
+        {
+          "name": "TC-PUT-02: Update Non-Existent Cosmetic (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// HTTP Status Check",
+                  "pm.test('Status code is 404', () => {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "// JSON Schema Validation",
+                  "const schema = {",
+                  "    type: 'object',",
+                  "    required: ['success', 'message'],",
+                  "    properties: {",
+                  "        success: { type: 'boolean' },",
+                  "        message: { type: 'string' }",
+                  "    }",
+                  "};",
+                  "",
+                  "pm.test('Response matches error schema', () => {",
+                  "    pm.response.to.have.jsonSchema(schema);",
+                  "});",
+                  "",
+                  "pm.test('Success is false', () => {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.success).to.be.false;",
+                  "});",
+                  "",
+                  "pm.test('Error message indicates not found', () => {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.message).to.be.a('string');",
+                  "    pm.expect(data.message.toLowerCase()).to.include('not found');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cosmeticCode\": \"FAKE999\",\n  \"cosmeticName\": \"Non-Existent Product\",\n  \"skinType\": \"Normal\",\n  \"expirationDate\": \"2026-12-31\",\n  \"cosmeticSize\": \"50ml\",\n  \"dollarPrice\": 25.00,\n  \"categoryId\": \"PL02\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics/NONEXISTENT999",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics", "NONEXISTENT999"]
+            }
+          }
+        },
+        {
+          "name": "TC-PUT-03: Update With Invalid Data (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// HTTP Status Check",
+                  "pm.test('Status code is 400', () => {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Success is false', () => {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.success).to.be.false;",
+                  "});",
+                  "",
+                  "pm.test('Error message indicates validation failure', () => {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.message).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cosmeticCode\": \"TC001\",\n  \"cosmeticName\": \"\",\n  \"skinType\": \"Normal\",\n  \"expirationDate\": \"2026-12-31\",\n  \"cosmeticSize\": \"50ml\",\n  \"dollarPrice\": 0,\n  \"categoryId\": \"PL02\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics/TEST001",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics", "TEST001"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. DELETE Endpoint Tests",
+      "item": [
+        {
+          "name": "TC-DELETE-01: Soft Delete Success (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// HTTP Status Check",
+                  "pm.test('Status code is 200', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// JSON Schema Validation",
+                  "const schema = {",
+                  "    type: 'object',",
+                  "    required: ['success', 'message', 'data'],",
+                  "    properties: {",
+                  "        success: { type: 'boolean' },",
+                  "        message: { type: 'string' },",
+                  "        data: {",
+                  "            type: 'object',",
+                  "            required: ['cosmeticId', 'status'],",
+                  "            properties: {",
+                  "                cosmeticId: { type: 'string' },",
+                  "                status: { type: 'integer' }",
+                  "            }",
+                  "        }",
+                  "    }",
+                  "};",
+                  "",
+                  "pm.test('Response matches schema', () => {",
+                  "    pm.response.to.have.jsonSchema(schema);",
+                  "});",
+                  "",
+                  "pm.test('Success is true', () => {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test('Status changed to 0 (soft deleted)', () => {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.data.status).to.eql(0);",
+                  "});",
+                  "",
+                  "pm.test('Correct cosmetic was deleted', () => {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.data.cosmeticId).to.eql('TEST001');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics/TEST001",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics", "TEST001"]
+            }
+          }
+        },
+        {
+          "name": "TC-DELETE-02: Delete Non-Existent Item (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// HTTP Status Check",
+                  "pm.test('Status code is 404', () => {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "// JSON Schema Validation",
+                  "const schema = {",
+                  "    type: 'object',",
+                  "    required: ['success', 'message'],",
+                  "    properties: {",
+                  "        success: { type: 'boolean' },",
+                  "        message: { type: 'string' }",
+                  "    }",
+                  "};",
+                  "",
+                  "pm.test('Response matches error schema', () => {",
+                  "    pm.response.to.have.jsonSchema(schema);",
+                  "});",
+                  "",
+                  "pm.test('Success is false', () => {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.success).to.be.false;",
+                  "});",
+                  "",
+                  "pm.test('Error message indicates not found', () => {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.message).to.be.a('string');",
+                  "    pm.expect(data.message.toLowerCase()).to.include('not found');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics/NONEXISTENT999",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics", "NONEXISTENT999"]
+            }
+          }
+        },
+        {
+          "name": "TC-DELETE-03: Verify Deleted Item Not In List",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// HTTP Status Check",
+                  "pm.test('Status code is 200', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Success is true', () => {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test('Deleted item not in active list', () => {",
+                  "    const data = pm.response.json();",
+                  "    const deletedItem = data.data.items.find(i => i.cosmeticId === 'TEST001');",
+                  "    pm.expect(deletedItem).to.be.undefined;",
+                  "});",
+                  "",
+                  "pm.test('All returned items have status = 1', () => {",
+                  "    const data = pm.response.json();",
+                  "    data.data.items.forEach(item => {",
+                  "        pm.expect(item.status).to.eql(1);",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cosmetics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cosmetics"]
+            }
+          }
+        }
+      ]
     }
   ]
 }
